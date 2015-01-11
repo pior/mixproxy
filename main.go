@@ -19,9 +19,9 @@ func main() {
 	}
 
 	http.HandleFunc("/health", healthHandlerFunc)
-	http.Handle("/", NewMixpanelProxy(mixpanelHost))
+	http.Handle("/", NewProxy(mixpanelHost))
 
-	log.Println("Listening...")
+	log.Println("Listening on :8080 ...")
 	err = http.ListenAndServe(":8080", nil)
 	if err != nil {
 		panic(err)
