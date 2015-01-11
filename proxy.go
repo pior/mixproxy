@@ -9,11 +9,11 @@ import (
 	"net/url"
 )
 
-type MixpanelProxy struct {
+type Proxy struct {
 	proxy *httputil.ReverseProxy
 }
 
-func NewMixpanelProxy(target *url.URL) *MixpanelProxy {
+func NewProxy(target *url.URL) *Proxy {
 	log.Printf("Proxying to %s://%s\n", target.Scheme, target.Host)
 
 	director := func(req *http.Request) {
@@ -24,13 +24,13 @@ func NewMixpanelProxy(target *url.URL) *MixpanelProxy {
 
 	proxy := &httputil.ReverseProxy{Director: director}
 
-	return &MixpanelProxy{
+	return &Proxy{
 		proxy: proxy,
 	}
 }
 
-func (p *MixpanelProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	setpoint := handleMixpanelRequest(req)
+func (p *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	// setpoint := handleMixpanelRequest(req)
 
 	if setpoint.enabled {
 		p.proxy.ServeHTTP(rw, req)
@@ -40,15 +40,15 @@ func (p *MixpanelProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 }
 
 type MixpanelRequestSetpoint struct {
-	enabled bool
+	forward bool
 }
 
 func (s *MixpanelRequestSetpoint) setForEvent(event EventPayload) {
-	s.enabled = false
+	s.forward = false
 }
 
 func handleMixpanelRequest(req *http.Request) (setpoint MixpanelRequestSetpoint) {
-	setpoint.enabled = true // Enabled by default
+	setpoint.forward = true // forward by default
 
 	form, err := dumpRequestForm(req)
 	if err != nil {
@@ -59,7 +59,6 @@ func handleMixpanelRequest(req *http.Request) (setpoint MixpanelRequestSetpoint)
 	if err != nil {
 		log.Println("error: base64: ", err)
 	}
-	// data := getData(req)
 	if data == nil {
 		log.Printf("debug: no data")
 		return
