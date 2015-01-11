@@ -30,12 +30,37 @@ func NewProxy(target *url.URL) *Proxy {
 }
 
 func (p *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	// setpoint := handleMixpanelRequest(req)
+	setpoint := handleMixpanelRequest(req)
 
-	if setpoint.enabled {
+	if setpoint.forward {
 		p.proxy.ServeHTTP(rw, req)
 	} else {
+		serveDummyMixpanelResponse(rw, req)
+	}
+}
 
+func serveDummyMixpanelResponse(rw http.ResponseWriter, req *http.Request) {
+	err := req.ParseForm()
+	if err != nil {
+		log.Printf("mixproxy: fake response error: %v", err)
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	redirect := req.Form.Get("redirect")
+	if redirect != "" {
+		rw.WriteHeader(302)
+		rw.Header().Set("Location", redirect)
+		rw.Header().Set("Cache-Control", "no-cache, no-store")
+		return
+	}
+
+	verbose := req.Form.Get("verbose")
+	if verbose == "1" {
+		rw.Header().Set("Content-Type", "application/json")
+		rw.Write([]byte(`{"error": "", "status": 1}`))
+	} else {
+		rw.Write([]byte("1"))
 	}
 }
 
